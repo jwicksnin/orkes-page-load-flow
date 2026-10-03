@@ -19,9 +19,9 @@ const orkesConfig = {
   keySecret: process.env.KEY_SECRET,
 };
 
+// worker is defined with an associated task
+// worker is polling the workflow for when the workflow needs the task
 class ConductorWorkers {
-  // worker is defined with an associated task
-  // worker is polling the workflow for when it needs the task
   @worker({ taskDefName: 'greet' })
   async greet(task: Task) {
     let name = task.inputData?.name;
@@ -40,11 +40,9 @@ class ConductorWorkers {
   @worker({ taskDefName: 'loggedIn' })
   async loggedIn(task: Task) {
     // This is a stub for calling an API to check logged in status
-    // If they were initially logged out, entered a username, get that status from the username task
-    console.log('received loggedIn input? ', task.inputData?.loggedIn);
+    // If they are logged out, entered a username, get that status from the username task
     const isLoggedIn =
       task.inputData?.loggedIn === true || Math.round(Math.random());
-    console.log('logged in? ', Boolean(isLoggedIn));
     return {
       status: 'COMPLETED' as const,
       outputData: {
@@ -54,7 +52,6 @@ class ConductorWorkers {
   }
   @worker({ taskDefName: 'locale' })
   async locale(task: Task) {
-    console.log('locale task input for logged in: ', task.inputData?.loggedIn);
     const reader = readline.createInterface({ input, output });
     const locale = await reader.question('What is your locale? ');
     reader.close();
@@ -66,10 +63,10 @@ class ConductorWorkers {
     };
   }
   @worker({ taskDefName: 'userName' })
+  // Only use this if they are not logged in initially
   async userName(task: Task) {
-    console.log('userName task starting');
     const reader = readline.createInterface({ input, output });
-    const userName = await reader.question('What is your username? ');
+    const userName = await reader.question('Please tell me your username so I can log you in ');
     reader.close();
     return {
       status: 'COMPLETED' as const,
@@ -86,6 +83,8 @@ async function main() {
   const clients = await OrkesClients.from(orkesConfig);
   const executor = clients.getWorkflowClient();
 
+  // If the user isn't logged in, use this loop to log them in
+  // Can be expanded for more conditional page load logic
   const logUserInTask = doWhileTask(
     'logUserIn_ref',
     'if ($.logUserIn_ref.iteration < 2 && $.loggedIn_ref?.output === false) { true } else { false }',
@@ -124,8 +123,7 @@ async function main() {
     client: clients.getClient(),
     scanForDecorated: true,
   });
-  // This is synonymous with the workers that are in a separate console in the other example
-  // Workers here are defined with the decorator
+  // Workers here are defined with the decorators within the Workers class
   // TaskHandler is more modern; uses decorators; no manual worker registration; decoupled
   await handler.startWorkers();
 
