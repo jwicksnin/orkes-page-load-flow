@@ -11,7 +11,6 @@ import {
   simpleTask,
   switchTask,
   doWhileTask,
-  humanTask,
 } from '@io-orkes/conductor-javascript';
 
 const orkesConfig = {
@@ -21,26 +20,23 @@ const orkesConfig = {
 };
 
 class ConductorWorkers {
-  // Store the compiled closure in the class scope
-  private promptForUserInput: (workflowId: string) => Promise<void>;
-
-  constructor(promptClosure: (workflowId: string) => Promise<void>) {
-    this.promptForUserInput = promptClosure;
-  }
   // worker is defined with an associated task
   // worker is polling the workflow for when it needs the task
   @worker({ taskDefName: 'greet' })
-  greet = async (task: Task) => {
+  async greet(task: Task) {
     let name = task.inputData?.name;
-    const workflowId = task.workflowInstanceId!;
     if (!name) {
-      await this.promptForUserInput(workflowId);
+      const reader = readline.createInterface({ input, output });
+      name = await reader.question('What is your name? ');
+      reader.close();
     }
     return {
       status: 'COMPLETED' as const,
-      outputData: { message: 'Prompt initiated on terminal.' },
+      outputData: {
+        result: `Hello, ${name}! Welcome to Orkes Conductor.`,
+      },
     };
-  };
+  }
   @worker({ taskDefName: 'loggedIn' })
   async loggedIn(task: Task) {
     // This is a stub for calling an API to check logged in status
@@ -86,29 +82,9 @@ class ConductorWorkers {
 
 async function main() {
   // Configure the SDK (reads CONDUCTOR_SERVER_URL / CONDUCTOR_AUTH_* from env).
-
+  void new ConductorWorkers();
   const clients = await OrkesClients.from(orkesConfig);
   const executor = clients.getWorkflowClient();
-
-  const promptForUserInput = (clients: OrkesClients) => {
-    return async (workflowId: any) => {
-      console.log('inside the inner part of promptForUserInput');
-      const reader = readline.createInterface({ input, output });
-      const name = await reader.question('What is your name? ');
-      reader.close();
-
-      const taskClient = clients.getWorkflowClient();
-      await taskClient.updateTaskByRefName(
-        workflowId,
-        'wait_for_user_form', // References the humanTask block name
-        'COMPLETED',
-        { result: `Hello, ${name}! Welcome to Orkes Conductor.` }
-      );
-    };
-  };
-
-  const compiledPrompt = promptForUserInput(clients);
-  void new ConductorWorkers(compiledPrompt);
 
   const logUserInTask = doWhileTask(
     'logUserIn_ref',
@@ -125,19 +101,8 @@ async function main() {
   );
 
   const workflow = new ConductorWorkflow(executor, 'pageLoadFlow')
-    .add(
-      simpleTask('greet_ref', 'greet', {
-        name: '${workflow.input.name}',
-        promptForUserInput: promptForUserInput(clients),
-      })
-    )
-    .add(humanTask('wait_for_user_name'))
-    .add(
-      simpleTask('process_input_ref', 'next_task', {
-        userInput: '${wait_for_user_name.output.result}',
-      })
-    )
-    .outputParameters({ result: '${wait_for_user_name.output.result}' })
+    .add(simpleTask('greet_ref', 'greet', { name: '${workflow.input.name}' }))
+    .outputParameters({ result: '${greet_ref.output.result}' })
     .add(simpleTask('loggedIn_ref', 'loggedIn', {}))
     .add(
       switchTask('switch_ref', '${loggedIn_ref.output.result}', {
@@ -146,7 +111,9 @@ async function main() {
             loggedIn: '${loggedIn_ref.output.result}',
           }),
         ],
-        false: [logUserInTask],
+        false: [
+          logUserInTask,
+        ],
       })
     );
 
