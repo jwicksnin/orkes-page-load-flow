@@ -11,6 +11,7 @@ import {
   simpleTask,
   switchTask,
   doWhileTask,
+  humanTask,
 } from '@io-orkes/conductor-javascript';
 
 const orkesConfig = {
@@ -25,16 +26,20 @@ class ConductorWorkers {
   @worker({ taskDefName: 'greet' })
   async greet(task: Task) {
     let name = task.inputData?.name;
+    // This closure approach may cause runtime errors if run outside of
+    // the same local server because inputData is serialized as JSON
+    // so you can't pass a function
+    const promptForUserInput = task.inputData?.promptForUserInput as
+      | ((workflowId: string) => Promise<void>)
+      | undefined;
     if (!name) {
-      const reader = readline.createInterface({ input, output });
-      name = await reader.question('What is your name? ');
-      reader.close();
+      if (promptForUserInput && task.workflowInstanceId) {
+        promptForUserInput(task.workflowInstanceId);
+      }
     }
     return {
       status: 'COMPLETED' as const,
-      outputData: {
-        result: `Hello, ${name}! Welcome to Orkes Conductor.`,
-      },
+      outputData: { message: 'Prompt initiated on terminal.' },
     };
   }
   @worker({ taskDefName: 'loggedIn' })
@@ -86,6 +91,23 @@ async function main() {
   const clients = await OrkesClients.from(orkesConfig);
   const executor = clients.getWorkflowClient();
 
+  const promptForUserInput = (clients: OrkesClients) => {
+    return async (workflowId: any) => {
+      console.log('inside the inner part of promptForUserInput');
+      const reader = readline.createInterface({ input, output });
+      const name = await reader.question('What is your name? ');
+      reader.close();
+
+      const taskClient = clients.getWorkflowClient();
+      await taskClient.updateTaskByRefName(
+        workflowId,
+        'wait_for_user_form', // References the humanTask block name
+        'COMPLETED',
+        { result: `Hello, ${name}! Welcome to Orkes Conductor.` }
+      );
+    };
+  };
+
   const logUserInTask = doWhileTask(
     'logUserIn_ref',
     'if ($.logUserIn_ref.iteration < 2 && $.loggedIn_ref?.output === false) { true } else { false }',
@@ -101,8 +123,19 @@ async function main() {
   );
 
   const workflow = new ConductorWorkflow(executor, 'pageLoadFlow')
-    .add(simpleTask('greet_ref', 'greet', { name: '${workflow.input.name}' }))
-    .outputParameters({ result: '${greet_ref.output.result}' })
+    .add(
+      simpleTask('greet_ref', 'greet', {
+        name: '${workflow.input.name}',
+        promptForUserInput: promptForUserInput(clients),
+      })
+    )
+    .add(humanTask('wait_for_user_name'))
+    .add(
+      simpleTask('process_input_ref', 'next_task', {
+        userInput: '${wait_for_user_name.output.result}',
+      })
+    )
+    .outputParameters({ result: '${wait_for_user_name.output.result}' })
     .add(simpleTask('loggedIn_ref', 'loggedIn', {}))
     .add(
       switchTask('switch_ref', '${loggedIn_ref.output.result}', {
@@ -111,9 +144,7 @@ async function main() {
             loggedIn: '${loggedIn_ref.output.result}',
           }),
         ],
-        false: [
-          logUserInTask,
-        ],
+        false: [logUserInTask],
       })
     );
 
