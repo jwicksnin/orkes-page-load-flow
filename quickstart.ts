@@ -21,27 +21,26 @@ const orkesConfig = {
 };
 
 class ConductorWorkers {
+  // Store the compiled closure in the class scope
+  private promptForUserInput: (workflowId: string) => Promise<void>;
+
+  constructor(promptClosure: (workflowId: string) => Promise<void>) {
+    this.promptForUserInput = promptClosure;
+  }
   // worker is defined with an associated task
   // worker is polling the workflow for when it needs the task
   @worker({ taskDefName: 'greet' })
-  async greet(task: Task) {
+  greet = async (task: Task) => {
     let name = task.inputData?.name;
-    // This closure approach may cause runtime errors if run outside of
-    // the same local server because inputData is serialized as JSON
-    // so you can't pass a function
-    const promptForUserInput = task.inputData?.promptForUserInput as
-      | ((workflowId: string) => Promise<void>)
-      | undefined;
+    const workflowId = task.workflowInstanceId!;
     if (!name) {
-      if (promptForUserInput && task.workflowInstanceId) {
-        promptForUserInput(task.workflowInstanceId);
-      }
+      await this.promptForUserInput(workflowId);
     }
     return {
       status: 'COMPLETED' as const,
       outputData: { message: 'Prompt initiated on terminal.' },
     };
-  }
+  };
   @worker({ taskDefName: 'loggedIn' })
   async loggedIn(task: Task) {
     // This is a stub for calling an API to check logged in status
@@ -87,7 +86,7 @@ class ConductorWorkers {
 
 async function main() {
   // Configure the SDK (reads CONDUCTOR_SERVER_URL / CONDUCTOR_AUTH_* from env).
-  void new ConductorWorkers();
+
   const clients = await OrkesClients.from(orkesConfig);
   const executor = clients.getWorkflowClient();
 
@@ -107,6 +106,9 @@ async function main() {
       );
     };
   };
+
+  const compiledPrompt = promptForUserInput(clients);
+  void new ConductorWorkers(compiledPrompt);
 
   const logUserInTask = doWhileTask(
     'logUserIn_ref',
