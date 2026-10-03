@@ -1,0 +1,28 @@
+{
+  "name": "orkes-travel-app",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "@io-orkes/conductor-javascript": "^4.0.0",
+    "@openai/agents": "^0.8.0",
+    "dotenv": "^16.0.0",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.4",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.23.13",
+    "typescript": "^7.0.2"
+  },
+  "overrides": {
+    "zod": "$zod"
+  }
+}
