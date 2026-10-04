@@ -48,6 +48,11 @@ result: "Hello, [your name here]! Welcome to Orkes Conductor."
 INFO Stopping 4 worker(s)...
 INFO All workers stopped
 ```
+### Check Out the Workflow in the UI
+* Go to the [Orkes UI](https://developer.orkescloud.com/)
+* On the left, click Executions > Workflow
+* Here you can see a visual of your workflow
+* Can be helpful in debugging
 
 ## Page Load Flow Logic
 When working on customer-facing apps, initial page load can be tricky. Before anything can be displayed to the user, there are multiple service requests and state checks that need to be done. Orkes Conductor can coordinate state including:
