@@ -83,12 +83,17 @@ async function main() {
     'logUserIn_ref',
     'if ($.logUserIn_ref.iteration < 2 && $.loggedIn_ref?.output === false) { true } else { false }',
     [
-      simpleTask('userName_ref', 'userName', {
-        userName: 'user1',
+      switchTask('switch_ref', '${loggedIn_ref.output.result}', {
+        true: [],
+        false: [
+          simpleTask('userName_ref', 'userName', {
+            userName: 'user1',
+          }),
+          simpleTask('loggedIn_task', 'loggedIn', { loggedIn: true }),
+        ],
       }),
-      simpleTask('loggedIn_task', 'loggedIn', { loggedIn: true }),
-      simpleTask('locale_task', 'locale', {
-        loggedIn: '${loggedIn_task.output.result}',
+      simpleTask('locale_ref', 'locale', {
+        loggedIn: '${loggedIn_ref.output.result}',
       }),
     ]
   );
@@ -96,20 +101,10 @@ async function main() {
   const workflow = new ConductorWorkflow(executor, 'pageLoadFlow')
     .add(simpleTask('greet_ref', 'greet', { name: '${workflow.input.name}' }))
     .add(simpleTask('loggedIn_ref', 'loggedIn', {}))
-    .add(
-      switchTask('switch_ref', '${loggedIn_ref.output.result}', {
-        true: [
-          simpleTask('locale_ref', 'locale', {
-            loggedIn: '${loggedIn_ref.output.result}',
-          }),
-        ],
-        false: [logUserInTask],
-      })
-    )
+    .add(logUserInTask)
     .outputParameters({
       name: '${greet_ref.output.result}',
       locale: '${locale_ref.output.result}',
-      loggingInLocale: '${locale_task.output.result}',
       userName: '${userName_ref.output.result}',
     });
 
@@ -126,11 +121,7 @@ async function main() {
 
   // Run the workflow and get the result.
   const run = await workflow.execute({ name: 'Friend' });
-  console.log(
-    `Hello ${run.output?.name} in locale ${
-      run.output?.locale || run.output?.loggingInLocale
-    }!`
-  );
+  console.log(`Hello ${run.output?.name} in locale ${run.output?.locale}!`);
 
   await handler.stopWorkers();
   process.exit(0);

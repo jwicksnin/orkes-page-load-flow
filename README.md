@@ -68,9 +68,9 @@ The flow steps are:
 ***TL;DR Conductor Key Concepts:** The workers poll the workflow to see when the workflow calls their associated task.*
 
 ### Workers
-In the [`ConductorWorkers` class](quickstart.ts#L24), each worker is defined in a Typescript decorator and with an associated task.
+In the [`ConductorWorkers` class](quickstart.ts#L22), each worker is defined in a Typescript decorator and with an associated task.
 
-Once the class is instantiated within `main()`, the [`TaskHandler`](quickstart.ts#L122) finds all the workers within the `ConductorWorkers` class. Note the `scanForDecorated` param:
+Once the class is instantiated within `main()`, the [`TaskHandler`](quickstart.ts#L114) finds all the workers within the `ConductorWorkers` class. Note the `scanForDecorated` param:
 
 ```typescript
 const handler = new TaskHandler({
@@ -81,17 +81,17 @@ const handler = new TaskHandler({
 ***Pro Tip:** `TaskHandler` is a more up-to-date version of `TaskManager` and allows use of Typescript decorators to avoid manual worker registration and tight coupling.*
 
 ### Workflow and Tasks
-In [the workflow](quickstart.ts#L102), there are examples of how to add tasks and use tasks' output in other tasks.
+In [the workflow](quickstart.ts#L101), there are examples of how to add tasks and use tasks' output in other tasks.
 
-For example, the output of the `loggedIn` task is a boolean, which is consumed by the [`switchTask`](quickstart.ts#L107).
+For example, the output of the `loggedIn` task is a boolean, which is consumed by the [`switchTask`](quickstart.ts#L86).
 
-***Note:** The logged in status is currently a random 1 or 0. You can replace the stub [here](quickstart.ts#L45) with your own API request to get the user's status dynamically.*
+***Note:** The logged in status is currently a random 1 or 0. You can replace the stub [here](quickstart.ts#L37) with your own API request to get the user's status dynamically.*
 
-The `logUserInTask` is ready to be extended into more complex logic. Currently, if the user isn't logged in initially, this will loop over the log in steps until they are logged in. The [iterations condition is set to max 1 for safety](quickstart.ts#L90), but more complex conditions would work here. 
+The `logUserInTask` is ready to be extended into more complex logic. Currently, if the user isn't logged in initially, this will loop over the log in steps until they are logged in. The [iterations condition is set to max 1 for safety](quickstart.ts#L84), but more complex conditions would work here. 
 
 ## Next Steps to Extend the Page Load Flow
 * Add another task that "interrupts" the workflow, like the user suddenly being logged out or changing locale.
-* Use [the Human task type](https://orkes.io/content/reference-docs/operators/human) to wait on user input and remove the hard-coded timeout. This commit uses the Human task but needs a litte tweaking to get working.
+* Use [the Human task type](https://orkes.io/content/reference-docs/operators/human) to get user input. 
 * Use an AI agent that gathers data or does an evaluation, then prompts for user input. See the [examples here](https://github.com/conductor-oss/javascript-sdk/tree/main/examples/agents) for ideas.
 * Create an [API Gateway](https://orkes.io/content/developer-guides/api-gateway) or [MCP Gateway](https://orkes.io/content/developer-guides/mcp-gateway) for the workflow that your codebase and agents can call.
 
