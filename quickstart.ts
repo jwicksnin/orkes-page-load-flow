@@ -1,7 +1,5 @@
 import { loadEnvFile } from 'node:process';
 loadEnvFile();
-import * as readline from 'node:readline/promises';
-import { stdin as input, stdout as output } from 'node:process';
 import {
   OrkesClients,
   ConductorWorkflow,
@@ -24,23 +22,18 @@ const orkesConfig = {
 class ConductorWorkers {
   @worker({ taskDefName: 'greet' })
   async greet(task: Task) {
-    let name = task.inputData?.name;
-    if (!name) {
-      const reader = readline.createInterface({ input, output });
-      name = await reader.question('What is your name? ');
-      reader.close();
-    }
+    const name = task.inputData?.name || 'New User';
     return {
       status: 'COMPLETED' as const,
       outputData: {
-        result: `Hello, ${name}! Welcome to Orkes Conductor.`,
+        result: name,
       },
     };
   }
   @worker({ taskDefName: 'loggedIn' })
   async loggedIn(task: Task) {
     // This is a stub for calling an API to check logged in status
-    // If they are logged out, entered a username, get that status from the username task
+    // If they are logged out, check the username, then get the status from the username task
     const isLoggedIn =
       task.inputData?.loggedIn === true || Math.round(Math.random());
     return {
@@ -52,9 +45,8 @@ class ConductorWorkers {
   }
   @worker({ taskDefName: 'locale' })
   async locale(task: Task) {
-    const reader = readline.createInterface({ input, output });
-    const locale = await reader.question('What is your locale? ');
-    reader.close();
+    // Mock asynchronous API call for the locale
+    const locale = await Promise.resolve('en-us');
     return {
       status: 'COMPLETED' as const,
       outputData: {
@@ -65,9 +57,11 @@ class ConductorWorkers {
   @worker({ taskDefName: 'userName' })
   // Only use this if they are not logged in initially
   async userName(task: Task) {
-    const reader = readline.createInterface({ input, output });
-    const userName = await reader.question('Please tell me your username so I can log you in ');
-    reader.close();
+    console.log(
+      "You're not logged in yet. Fetching your username and password to log you in..."
+    );
+    const inputUserName = task.inputData?.userName || 'user2';
+    const userName = await Promise.resolve(inputUserName);
     return {
       status: 'COMPLETED' as const,
       outputData: {
@@ -78,7 +72,7 @@ class ConductorWorkers {
 }
 
 async function main() {
-  // Configure the SDK (reads CONDUCTOR_SERVER_URL / CONDUCTOR_AUTH_* from env).
+  // Configure the SDK
   void new ConductorWorkers();
   const clients = await OrkesClients.from(orkesConfig);
   const executor = clients.getWorkflowClient();
@@ -90,7 +84,7 @@ async function main() {
     'if ($.logUserIn_ref.iteration < 2 && $.loggedIn_ref?.output === false) { true } else { false }',
     [
       simpleTask('userName_ref', 'userName', {
-        question: 'Sorry, I need your username so I can log you in ',
+        userName: 'user1',
       }),
       simpleTask('loggedIn_task', 'loggedIn', { loggedIn: true }),
       simpleTask('locale_task', 'locale', {
@@ -101,7 +95,6 @@ async function main() {
 
   const workflow = new ConductorWorkflow(executor, 'pageLoadFlow')
     .add(simpleTask('greet_ref', 'greet', { name: '${workflow.input.name}' }))
-    .outputParameters({ result: '${greet_ref.output.result}' })
     .add(simpleTask('loggedIn_ref', 'loggedIn', {}))
     .add(
       switchTask('switch_ref', '${loggedIn_ref.output.result}', {
@@ -110,11 +103,15 @@ async function main() {
             loggedIn: '${loggedIn_ref.output.result}',
           }),
         ],
-        false: [
-          logUserInTask,
-        ],
+        false: [logUserInTask],
       })
-    );
+    )
+    .outputParameters({
+      name: '${greet_ref.output.result}',
+      locale: '${locale_ref.output.result}',
+      loggingInLocale: '${locale_task.output.result}',
+      userName: '${userName_ref.output.result}',
+    });
 
   await workflow.register();
 
@@ -128,10 +125,15 @@ async function main() {
   await handler.startWorkers();
 
   // Run the workflow and get the result.
-  const run = await workflow.execute({ name: '' });
-  console.log(`result: ${run.output?.result}`);
+  const run = await workflow.execute({ name: 'Friend' });
+  console.log(
+    `Hello ${run.output?.name} in locale ${
+      run.output?.locale || run.output?.loggingInLocale
+    }!`
+  );
 
   await handler.stopWorkers();
+  process.exit(0);
 }
 
 main();
