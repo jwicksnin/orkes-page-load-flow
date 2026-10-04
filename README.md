@@ -11,7 +11,7 @@ Looking for high-level architecture and philosophy? Check out [Orkes Academy](ht
 ***Fun Fact:** According to the Cambridge dictionary, "Orkes" refers to a band or group of musicians, which is perfect for an orchestration layer!*
 
 # Page Load Flow Tutorial
-This codebase provides a jumping-off point for getting started with Orkes Conductor workflows using the Typescript SDK. The Page Load Flow is one example of wrangling various microservices and APIs that Orkes Conductor was made for. The flow can be extended to LLMs, agents, and more complex tasks.
+This codebase provides a jumping-off point for getting started with Orkes Conductor workflows using the [Typescript SDK](https://github.com/conductor-oss/javascript-sdk). The Page Load Flow is one example of coordinating complex microservice logic that Orkes Conductor was made for. The flow can be extended to LLMs, agents, and more complex tasks.
 
 After going through this tutorial, you will be able to modify this example to fit your needs, use parts of it in an existing code project, or create a new Conductor project. 
 
@@ -25,7 +25,7 @@ Includes:
 
 ***Pro Tip:** Using JSON instead of the SDK  can be a quick and easy way to use the [Orkes UI](https://developer.orkescloud.com/). See the [documentation for plug-and-play examples](https://github.com/conductor-oss/awesome-conductor-apps/tree/main/javascript).* 
 
-## Quick Start:
+## Quick Start
 1. Clone this repo 
 1. `cd orkes-login-flow`
 1. `touch .env` 
@@ -36,10 +36,9 @@ Includes:
 SERVER_URL="https://developer.orkescloud.com/api",
 KEY_ID="[your Orkes key id here]",
 KEY_SECRET="[your Orkes key secret here]",
-
 ```
-1. `npm install`
-1. `npx tsx quickstart.ts`
+5. `npm install`
+6. `npx tsx quickstart.ts`
 
 At this point, you will see the workflow start and prompt the user for input. Once you answer the questions, it will look like this:
 ```console
