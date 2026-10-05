@@ -4,7 +4,7 @@
 * Agents that need to be more predictable?
 * Workflows that use AI and need human approvals?
 
-If you're currently facing any of these issues or you wisely predict seeing them in the future, try Orkes Conductor orchestration layer. 
+If you're currently facing any of these issues or you wisely predict seeing them in the future, try Orkes Conductor orchestration layer to decouple and simplify complex workflows, taking them out of your codebase. 
 
 Looking for high-level architecture and philosophy? Check out [Orkes Academy](https://orkes.io/academy) for quick videos that provide background for implementation.
 
@@ -40,22 +40,23 @@ KEY_SECRET="[your Orkes key secret here]",
 5. `npm install`
 6. `npx tsx quickstart.ts`
 
-At this point, you will see the workflow start and prompt the user for input. Once you answer the questions, it will look like this:
+At this point, you will see the workflow start and it will look like this:
 ```console
 INFO Discovered 4 worker(s) via @worker decorator
 ...
-result: "Hello, [your name here]! Welcome to Orkes Conductor."
+Hello Friend in locale en-us!
 INFO Stopping 4 worker(s)...
 INFO All workers stopped
 ```
 ### Check Out the Workflow in the UI
 * Go to the [Orkes UI](https://developer.orkescloud.com/)
-* On the left, click Executions > Workflow
+* In the menu, select Executions > Workflow
 * Here you can see a visual of your workflow
 * Can be helpful in debugging
+![page load flow in Orkes UI](orkes_workflow_ui.png)
 
 ## Page Load Flow Logic
-When working on customer-facing apps, initial page load can be tricky. Before anything can be displayed to the user, there are multiple service requests and state checks that need to be done. Orkes Conductor can coordinate state including:
+When working on customer-facing apps, initial page load can be tricky. Before anything can be displayed to the user, there are multiple service requests and state checks that need to be done. Orkes Conductor can coordinate them including:
 
 * Logged in status
 * Locale
@@ -90,7 +91,7 @@ In [the workflow](quickstart.ts#L101), there are examples of how to add tasks an
 
 For example, the output of the `loggedIn` task is a boolean, which is consumed by the [`switchTask`](quickstart.ts#L86).
 
-***Note:** The logged in status is currently a random 1 or 0. You can replace the stub [here](quickstart.ts#L37) with your own API request to get the user's status dynamically.*
+***Note:** The logged in status is currently a random 1 or 0. You can replace the stub [in the loggedIn task](quickstart.ts#L37) with your own API request to get the user's status dynamically.*
 
 The `logUserInTask` is ready to be extended into more complex logic. Currently, if the user isn't logged in initially, this will loop over the log in steps until they are logged in. The [iterations condition is set to max 1 for safety](quickstart.ts#L84), but more complex conditions would work here. 
 
