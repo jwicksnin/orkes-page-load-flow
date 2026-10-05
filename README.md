@@ -26,8 +26,8 @@ Includes:
 ***Pro Tip:** Using JSON instead of the SDK  can be a quick and easy way to use the [Orkes UI](https://developer.orkescloud.com/). See the [documentation for plug-and-play examples](https://github.com/conductor-oss/awesome-conductor-apps/tree/main/javascript).* 
 
 ## Quick Start
-1. Clone this repo 
-1. `cd orkes-login-flow`
+1. `git clone git@github.com:jwicksnin/orkes-page-load-flow.git`  
+1. `cd orkes-page-load-flow`
 1. `touch .env` 
     * Using the .env file avoids the need to `export` the variables in your console
 1. Go to the [Orkes UI to get your access keys](https://orkes.io/content/sdks/authentication#retrieving-access-keys)
